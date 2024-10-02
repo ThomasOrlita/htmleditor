@@ -1,0 +1,188 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Editor</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: system-ui, Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+        }
+
+        main {
+            display: flex;
+            height: 100%;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                flex-direction: column;
+            }
+        }
+
+        main>div {
+            flex: 1;
+            display: flex;
+        }
+
+        .ace_print-margin {
+            display: none;
+        }
+
+        #output {
+            position: relative;
+        }
+
+        #loading {
+            position: absolute;
+            margin: 1em;
+        }
+
+        #outputFrame {
+            border: none;
+            flex: 1;
+            display: none;
+        }
+    </style>
+    <meta name="color-scheme" content="dark light">
+</head>
+
+<body>
+    <header>
+        <input id="codeName" placeholder="Transform name / description" readonly style="display: none;"></input>
+        <select id="savedItems"></select>
+        <input id="renameButton" type="button" value="Rename">
+        <input id="deleteButton" type="button" value="Delete">
+    </header>
+    <main>
+        <div id="editor">
+        </div>
+        <div id="output">
+            <div id="loading">
+                loading&hellip;
+            </div>
+            <iframe id="outputFrame"></iframe>
+        </div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+        var editor = ace.edit('editor');
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/html");
+        editor.setOption("indentedSoftWrap", false);
+        editor.setOption("wrap", false);
+
+        const defaultTemplate = `<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="color-scheme" content="dark light">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Title</title>
+</head>
+
+<body>
+    <h1>Hello World!</h1>
+</body>
+</html>`;
+
+        if (location.hash.length <= 1) {
+            location.hash = '#default';
+        }
+
+        // const setFrameContent = content => document.querySelector('#outputFrame').src = 'data:text/html;charset=utf-8,' + escape(content);
+        const setFrameContent = content => {
+            const iframe = document.querySelector('#outputFrame');
+            iframe.srcdoc = content;
+            if (iframe.contentWindow) {
+                iframe.contentWindow.document.open();
+                iframe.contentWindow.document.write(content);
+                iframe.contentWindow.document.close();
+            }
+        };
+
+        const initCode = () => {
+            const inputCode = localStorage.getItem(location.hash) || defaultTemplate;
+            editor.setValue(inputCode, 1);
+            document.querySelector('#loading').style.display = 'none';
+            document.querySelector('#outputFrame').style.display = 'block';
+            setFrameContent(inputCode);
+        };
+
+        initCode();
+
+        document.querySelector('#savedItems').onchange = (e) => {
+            location.hash = e.target.value;
+            initCode();
+        };
+
+        const saveToLocalStorage = () => localStorage.setItem(location.hash, editor.getValue());
+
+        editor.on('change', () => {
+            saveToLocalStorage();
+            setFrameContent(editor.getValue());
+        });
+
+        const updateSavedItems = () => {
+            document.querySelector('#savedItems').innerHTML = '';
+            const codeHistory = { ...localStorage };
+            for (const item in codeHistory) {
+                const optionEl = document.createElement('option');
+                optionEl.value = item;
+                optionEl.innerText = item;
+                document.querySelector('#savedItems').appendChild(optionEl);
+            }
+            document.querySelector('#savedItems').value = location.hash;
+        }
+        updateSavedItems();
+
+        document.querySelector('#renameButton').onclick = () => {
+            const localStorageValue = localStorage.getItem(location.hash) ?? '';
+            const newName = (prompt('Enter new hash', location.hash) ?? '');
+            if (newName.charAt(0) !== '#') return alert('Hash must start with #');
+
+
+            localStorage.removeItem(location.hash);
+            localStorage.setItem(newName, localStorageValue);
+            location.hash = newName;
+        };
+
+        document.querySelector('#deleteButton').onclick = () => {
+            if(!confirm('Are you sure you want to delete ' + location.hash + '?')) return;
+            editor.setValue('');
+            localStorage.removeItem(location.hash);
+            updateSavedItems();
+            const firstSelectOption = document.querySelector('#savedItems').firstElementChild?.value;
+            if (firstSelectOption) {
+                location.hash = firstSelectOption;
+            } else {
+                location.hash = '#default';
+                localStorage.setItem(location.hash, '');
+                updateSavedItems();
+            }
+        };
+
+        window.onhashchange = () => {
+            initCode();
+            updateSavedItems();
+        };
+
+        if (!localStorage.getItem(location.hash)) {
+            saveToLocalStorage();
+            updateSavedItems();
+        }
+    </script>
+</body>
+
+</html>
