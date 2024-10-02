@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML Editor</title>
     <style>
+        * {
+            font-family: monospace, sans-serif;
+        }
+
         html,
         body {
             height: 100%;
             margin: 0;
-            font-family: system-ui, Arial, sans-serif;
         }
 
         body {
@@ -17,8 +20,24 @@
             flex-direction: column;
         }
 
-        header {
+        header,
+        select,
+        button {
             display: flex;
+            background-color: #303129;
+            color: #fff;
+        }
+
+        select,
+        button {
+            border: none;
+            margin: 0.25em 0.4em;
+        }
+
+        select:hover,
+        button:hover {
+            background-color: #495158;
+            cursor: pointer;
         }
 
         main {
@@ -62,9 +81,11 @@
 <body>
     <header>
         <input id="codeName" placeholder="Transform name / description" readonly style="display: none;"></input>
-        <select id="savedItems"></select>
-        <input id="renameButton" type="button" value="Rename">
-        <input id="deleteButton" type="button" value="Delete">
+        <select id="savedItems">
+            <option value="#default">#default</option>
+        </select>
+        <button id="renameButton">Rename</button>
+        <button id="deleteButton">Delete</button>
     </header>
     <main>
         <div id="editor">
@@ -159,7 +180,7 @@
         };
 
         document.querySelector('#deleteButton').onclick = () => {
-            if(!confirm('Are you sure you want to delete ' + location.hash + '?')) return;
+            if (!confirm('Are you sure you want to delete ' + location.hash + '?')) return;
             editor.setValue('');
             localStorage.removeItem(location.hash);
             updateSavedItems();
